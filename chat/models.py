@@ -10,6 +10,9 @@ class TimeSlot(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
+    class Meta:
+        app_label = 'api'
+
     @classmethod
     def initialize_slots(cls):
         # Define two time slots if they don't exist
@@ -22,6 +25,11 @@ class TimeSlot(models.Model):
 
     def __str__(self):
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
+
+
+
+
+
 
 
 def profile_upload_path(instance, filename):
@@ -52,7 +60,7 @@ class HistoryEntry(models.Model):
 
     def public_serialize(self):
         from django.conf import settings
-        return { 
+        return {
             "id": self.pk,
             "result": self.result,
             "image_url": f"mostafahp.pythonanywhere.com{settings.MEDIA_URL}{self.image}" if self.image else None,  # Provide full image URL
@@ -122,7 +130,7 @@ LOCATION_CHOICES = [
 class Doctor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     specialization = models.CharField(max_length=100, choices=SPECIALIZATIONS , null=True, blank=True)
-    clinic_location = models.CharField(max_length=255)
+    clinic_location = models.CharField(max_length=255 , null=True)
     City = models.CharField(max_length=255, choices=SPECIALIZATIONS , null=True , blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Add this line
     available_slots = models.ManyToManyField(TimeSlot, related_name="doctors")
@@ -292,12 +300,22 @@ class PatientReconData(models.Model):
 
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages",null=True, blank=True)
-    content = models.TextField()
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages" , null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    content = models.TextField()
 
     def __str__(self):
-        return f"Message from {self.sender.username} to {self.receiver.username} at {self.timestamp}"
+        return f"Message from {self.sender} to {self.receiver} at {self.timestamp}"
+
+    def serialize(self):
+        return {
+            "id": self.pk,
+            "sender": self.sender.username,
+            "receiver": self.receiver.username,
+            "timestamp": self.timestamp.isoformat(),
+            "content": self.content,
+        }
+
 
 
 class Notification(models.Model):
